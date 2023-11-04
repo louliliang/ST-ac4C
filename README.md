@@ -18,7 +18,7 @@ numpy==1.23.2
 For convenience, we strongly recommended users to install the Anaconda Python 3.9 (or above) in your local computer.
 
 2. Running
-Changing working dir to DeepAc4C, and then running the following command:
+Changing working dir to ST-ac4C, and then running the following command:
 Select testpredict.py file, right-click to run.
 
 3. Output
