@@ -147,7 +147,7 @@ if __name__ == '__main__':
         #记录模型运行开始时间
         start_time = time.time()
         for mode_num in range(1,11):
-            model = joblib.load('./model/kmer/' + label + '/'+str(mode_num)+'predict_protein.pkl', 'r+')
+            model = joblib.load('./model/test/' + label + '/'+str(mode_num)+'predict_protein.pkl', 'r+')
             prediction = model.predict_proba(X_test)[:, 1]
             pred_proba.append(prediction)
         pred_proba_ave = np.mean(np.array(pred_proba).T, axis=1)
