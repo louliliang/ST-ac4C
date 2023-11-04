@@ -63,6 +63,20 @@ def calc(TN, FP, FN, TP):
     MCC = fz / pow(fm, 0.5)
     return SN, SP, ACC, MCC
 
+#t检验
+def t_test(d1,d2,label):
+    # print(stats.levene(d1,d2))#如果返回结果的P值远大于0.05，那么我们认为两总体具有方差齐性
+    print("Null Hypothesis: mean(d1) = mean(d2), α= 0.05")
+    # 执行 T 检验
+    t_statistic, p_value = stats.ttest_ind(d1, d2,equal_var=True)
+    #ttest,pval = ttest_rel(d1,d2)
+    print("模型 "+str(label)+" 的T statistic:", t_statistic)
+    print("模型 "+str(label)+" 的P-value:", p_value)
+    if p_value < 0.05:
+        print("模型"+str(label)+"与stacking有显著性差异") #表示有显著性差异
+    else:
+        print("模型"+str(label)+"与stacking没有显著性差异")
+
 if __name__ == '__main__':
     import os
     import feature_scripts.sequence_read_save
@@ -89,17 +103,17 @@ if __name__ == '__main__':
     kind='kmer'
     data_test = fastas_neg + fastas_pos
     print("step_1: embedding ......")
-    #feature_scripts.Kmer.kmer_features_test(data_test,kind)
+    feature_scripts.Kmer.kmer_features_test(data_test,kind)
     # feature_scripts.ANF.ANF_features_test(data_test, kind)
     #feature_scripts.CKSNAP.cksnap_feature_test(data_train,kind)
-    #feature_scripts.PseEIIP.PseEIIP_feature_test(data_test,kind)
-    #feature_scripts.PseFeature.Pse_feature_test(data_test,kind)
+    feature_scripts.PseEIIP.PseEIIP_feature_test(data_test,kind)
+    feature_scripts.PseFeature.Pse_feature_test(data_test,kind)
     # print("step_3: feature scale and selection......")
     # feature_scripts.w2v_kmer_corpus_feature.w2v_kmer_corpus_test()
     # feature_scripts.w2v_kmer_corpus_feature.w2v_features_test(kind)
     # feature_scripts.w2v_kmer_corpus_feature.word2_vectest(kind)
-    #feature_scripts.MinMax.MinMax_normalized_test(kind)
-   # feature_scripts.feature_combine.feature_combine_test(kind)
+    feature_scripts.MinMax.MinMax_normalized_test(kind)
+    feature_scripts.feature_combine.feature_combine_test(kind)
     # dfn = pd.read_csv("./features/"+str(kind)+"/combined_features/word2vectest.csv", sep=',', header=None).to_numpy()
     # data_test = np.concatenate([dfx, dfn], axis=1)
     data_test= pd.read_csv("./features/" + str(kind) + "/combined_features/testfeature.csv", sep=',',
@@ -123,34 +137,35 @@ if __name__ == '__main__':
     #list = ['stacking','LR','knn','svm','RF','MLP']    #,'GBDT','Logistic',
     colorlist = ['red','pink','blue','green','orange','black']  #,
     k = 0
+    t_stacking=[]
+    t_LR=[]
+    t_knn=[]
+    t_svm=[]
+    t_RF=[]
+    t_MLP=[]
     for label in list:
         pred_proba = []
+        pred_prob=[]
+        start_time = time.time()
         for mode_num in range(1,11):
             model = joblib.load('./model/kmer/' + label + '/'+str(mode_num)+'predict_protein.pkl', 'r+')
             prediction = model.predict_proba(X_test)[:, 1]
             pred_proba.append(prediction)
-            # tempLabel = np.zeros(shape=y_test.shape, dtype=np.int32)
-            # for i in range(len(y_test)):
-            #     if prediction[i] < 0.5:
-            #         tempLabel[i] = 0;
-            #     else:
-            #         tempLabel[i] = 1;
-            # test_y = [int(i) for i in y_test]
-            #
-            # # 混淆矩阵（y:是样本真实分类结果，tempLabel：是样本预测分类结果）
-            # confusion = confusion_matrix(test_y, tempLabel)
-            # TN, FP, FN, TP = confusion.ravel()
-            # sn, sp, acc, mcc = calc(TN, FP, FN, TP)
-            # # 计算AUC
-            # au = roc_auc_score(test_y, prediction)
-            # prc = average_precision_score(test_y, prediction)
-            # print("sn个: %0.5f [%s]" % (sn, label))
-            # print("sp个: %0.5f [%s]" % (sp, label))
-            # print("ACC个: %0.5f [%s]" % (acc, label))
-            # print("MCC个: %0.5f [%s]" % (mcc, label))
-            # print("AUC个: %0.5f [%s]" % (au, label))
-            # print("PRC个: %0.5f [%s]" % (prc, label))
-            # # y_pred = [int(i) for i in y_pred]
+            tempLabel = np.zeros(shape=y_test.shape, dtype=np.int32)
+            for i in range(len(y_test)):
+                if prediction[i] < 0.5:
+                    tempLabel[i] = 0;
+                else:
+                    tempLabel[i] = 1;
+            test_y = [int(i) for i in y_test]
+
+            # 混淆矩阵（y:是样本真实分类结果，tempLabel：是样本预测分类结果）
+            confusion = confusion_matrix(test_y, tempLabel)
+            TN, FP, FN, TP = confusion.ravel()
+            sn, sp, acc, mcc = calc(TN, FP, FN, TP)
+            # 计算AUC
+            au = roc_auc_score(test_y, prediction)
+            prc = average_precision_score(test_y, prediction)
         pred_proba_ave = np.mean(np.array(pred_proba).T, axis=1)
         pred_proba_ave = [np.round(x, 4) for x in pred_proba_ave]
         tempLabel1 = np.zeros(shape=y_test.shape, dtype=np.int32)
@@ -160,55 +175,77 @@ if __name__ == '__main__':
             else:
                 tempLabel1[i] = 1;
         test_y = [int(i) for i in y_test]
-
         # 混淆矩阵（y:是样本真实分类结果，tempLabel：是样本预测分类结果）
         confusion = confusion_matrix(test_y, tempLabel1)
         TN, FP, FN, TP = confusion.ravel()
-        sn, sp, acc, mcc = calc(TN, FP, FN, TP)
+        SN, SP, ACC, MCC = calc(TN, FP, FN, TP)
+        # 定义计算t-test
+        if (str(label) == 'stacking'):
+            t_stacking.extend(pred_proba_ave)
+        if (str(label) == 'Logistic'):
+            t_LR.extend(pred_proba_ave)
+        if (str(label) == 'knn'):
+            t_knn.extend(pred_proba_ave)
+        if (str(label) == 'svm'):
+            t_svm.extend(pred_proba_ave)
+        if (str(label) == 'RF'):
+            t_RF.extend(pred_proba_ave)
+        if (str(label) == 'MLP'):
+            t_MLP.extend(pred_proba_ave)
+            # 计算t-test
         # 计算AUC
-        au = roc_auc_score(test_y, pred_proba_ave)
-        prc = average_precision_score(test_y, pred_proba_ave)
-        print("sn: %0.4f [%s]" % (sn, label))
-        print("sp: %0.4f [%s]" % (sp, label))
-        print("ACC: %0.4f [%s]" % (acc, label))
-        print("MCC: %0.4f [%s]" % (mcc, label))
-        print("AUC: %0.4f [%s]" % (au, label))
-        print("PRC: %0.4f [%s]" % (prc, label))
+        AUC = roc_auc_score(test_y, pred_proba_ave)
+        PRC = average_precision_score(test_y, pred_proba_ave)
+        print("sn: %0.4f [%s]" % (SN, label))
+        print("sp: %0.4f [%s]" % (SP, label))
+        print("ACC: %0.4f [%s]" % (ACC, label))
+        print("MCC: %0.4f [%s]" % (MCC, label))
+        print("AUC: %0.4f [%s]" % (AUC, label))
+        print("PRC: %0.4f [%s]" % (PRC, label))
+     
         # 保存最优参数
         font = {'style': 'italic'}
-
+        # 计算模型运行时间
+        end_time = time.time()
+        print("模型" + str(label) + "运行时间：", end_time - start_time, "秒")
         #-----画acc,sp,mcc,sn图
         plt.subplot(1, 2, 1)
-        plt.xticks(fontproperties='Times New Roman', fontsize=15)
-        plt.yticks(fontproperties='Times New Roman', fontsize=15)
-        plt.text(str(label),acc,'%.4f' %acc, ha='center', fontproperties='Times New Roman', fontsize=10,
+        plt.xticks(fontproperties='Times New Roman', fontsize=8)
+        plt.yticks(fontproperties='Times New Roman', fontsize=20)
+        plt.text(str(label),ACC,'%.4f' %ACC, ha='center', fontproperties='Times New Roman', fontsize=10,
                  zorder=10)
-        plt.rcParams.update({'font.size': 14})
         # 设置图片名称
-        plt.title("Independent test acc" ,fontdict={'size':15})
+        plt.title("Independent test acc")
         # 设置x轴标签名
-        plt.xlabel("Algorithm type" ,fontdict={'size':15})
+        plt.xlabel("Algorithm type")
         # 设置y轴标签名
-        plt.ylabel("ACC",fontdict={'size':15})
-        plt.bar(str(label), acc, color=colorlist[k])
-
+        plt.ylabel("ACC")
+        plt.bar(str(label), ACC, color=colorlist[k])
 
         plt.subplot(1, 2, 2)
-        plt.xticks(fontproperties='Times New Roman', fontsize=15)
-        plt.yticks(fontproperties='Times New Roman', fontsize=15)
-        plt.text(str(label), mcc,'%.4f' %mcc, ha='center', fontproperties='Times New Roman', fontsize=10,
+        plt.xticks(fontproperties='Times New Roman', fontsize=8)
+        plt.yticks(fontproperties='Times New Roman', fontsize=20)
+        plt.text(str(label), MCC,'%.4f' %MCC, ha='center', fontproperties='Times New Roman', fontsize=10,
                  zorder=10)
-        plt.rcParams.update({'font.size': 14})
         # 设置图片名称
-        plt.title("Independent test mcc",fontdict={'size':15})
+        plt.title("Independent test mcc")
         # 设置x轴标签名
-        plt.xlabel("Algorithm type",fontdict={'size':15})
+        plt.xlabel("Algorithm type")
         # 设置y轴标签名
         plt.ylabel("MCC")
-        plt.bar(str(label), mcc, color=colorlist[k])
+        plt.bar(str(label), MCC, color=colorlist[k])
         k = k + 1
-
     plt.show()
+    # 比较模型stacking和LR差异
+    t_test(t_stacking, t_LR, 'LR')
+    # 比较模型stacking和knn的差异
+    t_test(t_stacking, t_knn, 'knn')
+    # 比较模型stacking和svm的差异
+    t_test(t_stacking, t_svm, 'svm')
+    # 比较模型stacking和RF的差异
+    t_test(t_stacking, t_RF, 'RF')
+    # 比较模型stacking和MLP的差异
+    t_test(t_stacking, t_MLP, 'MLP')
     q = 0
     for label in list:
         pred_prob = []
