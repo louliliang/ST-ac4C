@@ -1,15 +1,11 @@
 import itertools
 import re
-
 import shap as shap
-from keras.layers import LSTM, Conv1D, GRU, Dense
-from lightgbm import LGBMClassifier
 from matplotlib import pyplot as plt, gridspec
 from pandas import DataFrame
 from sklearn import model_selection
 from sklearn.cluster import KMeans
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-from sklearn.feature_selection import SelectFromModel
 from xgboost import XGBClassifier
 import joblib
 import numpy as np
@@ -154,24 +150,11 @@ if __name__ == '__main__':
         code.append(name)
     train_y = np.array(code)
     train_x = np.array(x_train)
-    # GBDT作为基模型的特征选择,选择出最重要的20个特征
-    #1.画图（画出最重要的20个特征）
-    model1 =StackingClassifier(6)
-    model1.fit(x_train, y_train)
-    explainer = shap.Explainer(model1)
-    shap_values = explainer(x_train)
-    shap.summary_plot(shap_values, x_train)
-
-    # #2.选择出最重要的300个特征
-    # train_x = SelectFromModel(GradientBoostingClassifier(), max_features=400, threshold=-np.inf).fit_transform(train_x,train_y)
-    # # np.savetxt("C:/Users/lou/Desktop/result.csv", x, fmt='%s', delimiter=',')
-    # #train_x, train_y = shuffleData(x_new, train_y)
-    # print("------------------------------------------------------------")
     under_sample = ClusterCentroids(random_state=42)
     x_train, y_train = under_sample.fit_resample(train_x, train_y)
 
     level0 = list()
-    level1 = LogisticRegression(random_state=30, max_iter=1000)
+    level1 = LogisticRegression(random_state=30, max_iter=1000, solver="liblinear")
     level2 = SVC(C= 1.6134, kernel='rbf', degree=0.2651, gamma="auto", coef0=0.0, shrinking=True, probability=True,tol=0.078, class_weight=None, random_state=30)
     level0.append(('Logistic', LogisticRegression(random_state=0, max_iter=1100)))
     level0.append(('knn', KNeighborsClassifier(n_neighbors=20, leaf_size=17)))
@@ -319,20 +302,7 @@ if __name__ == '__main__':
         print("MCC: %0.4f [%s]" % (mean(MCC), label))
         print("AUC: %0.4f [%s]" % (mean(AUC), label))
         print("PRC: %0.4f [%s]" % (mean(PRC), label))
-        # 保存最优参数
-        # if (str(label) != 'stacking'):
-        #     print("输出最优参数" + str(label) + "模型")
-        #     print("using parms: %s" % (clf.best_params_))
-    # #输出评价指标
-    # AUC = cross_val_score(clf, x_train, y_train, cv=10, scoring='roc_auc')
-    # cv_results = cross_validate(clf, x_train, y_train, cv=10, scoring=confusion_matrix_scorer)
-    # print("sn: %0.5f (+/- %0.4f) [%s]" % (cv_results['test_sn'].mean(), cv_results['test_sn'].std(), label))
-    # print("sp: %0.5f (+/- %0.4f) [%s]" % (cv_results['test_sp'].mean(), cv_results['test_sp'].std(), label))
-    # print("acc: %0.5f (+/- %0.4f) [%s]" % (cv_results['test_acc'].mean(), cv_results['test_acc'].std(), label))
-    # print("mcc: %0.5f (+/- %0.4f) [%s]" % (cv_results['test_mcc'].mean(), cv_results['test_mcc'].std(), label))
-    # print("AUC: %0.5f (+/- %0.4f) [%s]" % (AUC.mean(), AUC.std(), label))
-    #
-
+    
 
 
 
