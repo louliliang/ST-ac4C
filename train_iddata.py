@@ -171,7 +171,7 @@ if __name__ == '__main__':
     x_train, y_train = under_sample.fit_resample(train_x, train_y)
 
     level0 = list()
-    level1 = LogisticRegression(random_state=0, max_iter=1000)
+    level1 = LogisticRegression(random_state=30, max_iter=1000, solver="liblinear")
     level2 = SVC(C=1.6134, kernel='rbf', degree=0.2651, gamma="auto", coef0=0.0, shrinking=True, probability=True,
                  tol=0.078, class_weight=None, random_state=30)
     level0.append(('Logistic', LogisticRegression(random_state=0, max_iter=1100)))
